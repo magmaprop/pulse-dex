@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  # ─── PostgreSQL Database ──────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pulse
+      POSTGRES_PASSWORD: pulse_dev_password
+      POSTGRES_DB: pulse_dex
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pulse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend API + WebSocket + Matching Engine ────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"  # REST API
+      - "4001:4001"  # WebSocket
+    environment:
+      DATABASE_URL: postgresql://pulse:pulse_dev_password@postgres:5432/pulse_dex
+      REDIS_URL: redis://redis:6379
+      PORT: 4000
+      WS_PORT: 4001
+      NODE_ENV: development
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      PYTH_HERMES_URL: https://hermes.pyth.network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma db push && npm run dev"
+
+  # ─── Frontend (Next.js) ──────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: ${WALLET_CONNECT_PROJECT_ID}
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_WS_URL: ws://localhost:4001
+      NEXT_PUBLIC_PYTH_HERMES_URL: https://hermes.pyth.network
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:

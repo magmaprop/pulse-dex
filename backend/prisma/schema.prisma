@@ -1,0 +1,416 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & Accounts ──────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  address       String   @unique // Ethereum address
+  accountIndex  Int      @default(autoincrement())
+  accountType   AccountType @default(STANDARD)
+  referralCode  String   @unique @default(cuid())
+  referredBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  balances      Balance[]
+  positions     Position[]
+  orders        Order[]
+  trades        Trade[]      @relation("UserTrades")
+  deposits      Deposit[]
+  withdrawals   Withdrawal[]
+  points        UserPoints[]
+  referrals     Referral[]   @relation("Referrer")
+  referredUsers Referral[]   @relation("Referred")
+  subAccounts   SubAccount[]
+  apiKeys       ApiKey[]
+  poolShares    PoolShare[]
+
+  @@index([address])
+}
+
+enum AccountType {
+  STANDARD
+  PREMIUM
+}
+
+model SubAccount {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  positions Position[]
+  orders    Order[]
+  balances  Balance[]
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  publicKey   String   @unique
+  permissions String[] // ["trade", "read", "withdraw"]
+  nonce       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([publicKey])
+}
+
+// ─── Balances ──────────────────────────────────────────────────
+
+model Balance {
+  id           String   @id @default(cuid())
+  userId       String
+  subAccountId String?
+  asset        String   @default("USDC")
+  available    Float    @default(0)
+  locked       Float    @default(0)
+  updatedAt    DateTime @updatedAt
+
+  user         User        @relation(fields: [userId], references: [id])
+  subAccount   SubAccount? @relation(fields: [subAccountId], references: [id])
+
+  @@unique([userId, subAccountId, asset])
+  @@index([userId])
+}
+
+// ─── Markets ───────────────────────────────────────────────────
+
+model Market {
+  id                        String      @id
+  symbol                    String      @unique
+  baseAsset                 String
+  quoteAsset                String      @default("USD")
+  status                    MarketStatus @default(ACTIVE)
+  maxLeverage               Int         @default(50)
+  tickSize                  Float
+  stepSize                  Float
+  initialMarginFraction     Float       @default(0.02)
+  maintenanceMarginFraction Float       @default(0.01)
+  closeOutMarginFraction    Float       @default(0.005)
+  fundingPeriodHours        Int         @default(1)
+  makerFee                  Float       @default(0)
+  takerFee                  Float       @default(0)
+  createdAt                 DateTime    @default(now())
+
+  positions   Position[]
+  orders      Order[]
+  trades      Trade[]
+  fundingRates FundingRate[]
+  candles     Candle[]
+
+  @@index([symbol])
+}
+
+enum MarketStatus {
+  ACTIVE
+  PAUSED
+  SETTLEMENT
+  DELISTED
+}
+
+// ─── Orders ────────────────────────────────────────────────────
+
+model Order {
+  id            String      @id @default(cuid())
+  userId        String
+  subAccountId  String?
+  marketId      String
+  clientOrderId String?
+  side          OrderSide
+  type          OrderType
+  price         Float?
+  triggerPrice  Float?
+  size          Float
+  filledSize    Float       @default(0)
+  remainingSize Float
+  avgFillPrice  Float?
+  status        OrderStatus @default(OPEN)
+  timeInForce   TimeInForce @default(GTC)
+  postOnly      Boolean     @default(false)
+  reduceOnly    Boolean     @default(false)
+  takeProfit    Float?
+  stopLoss      Float?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user          User        @relation(fields: [userId], references: [id])
+  subAccount    SubAccount? @relation(fields: [subAccountId], references: [id])
+  market        Market      @relation(fields: [marketId], references: [id])
+  makerTrades   Trade[]     @relation("MakerOrder")
+  takerTrades   Trade[]     @relation("TakerOrder")
+
+  @@index([userId, status])
+  @@index([marketId, side, status, price])
+  @@index([status])
+}
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+  STOP_MARKET
+  STOP_LIMIT
+}
+
+enum OrderStatus {
+  OPEN
+  PARTIAL
+  FILLED
+  CANCELLED
+  EXPIRED
+  REJECTED
+}
+
+enum TimeInForce {
+  GTC  // Good Til Cancel
+  IOC  // Immediate Or Cancel
+  FOK  // Fill Or Kill
+}
+
+// ─── Trades ────────────────────────────────────────────────────
+
+model Trade {
+  id            String   @id @default(cuid())
+  marketId      String
+  makerOrderId  String
+  takerOrderId  String
+  makerUserId   String
+  takerUserId   String
+  price         Float
+  size          Float
+  makerFee      Float    @default(0)
+  takerFee      Float    @default(0)
+  takerSide     OrderSide
+  createdAt     DateTime @default(now())
+
+  market        Market   @relation(fields: [marketId], references: [id])
+  makerOrder    Order    @relation("MakerOrder", fields: [makerOrderId], references: [id])
+  takerOrder    Order    @relation("TakerOrder", fields: [takerOrderId], references: [id])
+  user          User     @relation("UserTrades", fields: [takerUserId], references: [id])
+
+  @@index([marketId, createdAt])
+  @@index([makerUserId, createdAt])
+  @@index([takerUserId, createdAt])
+}
+
+// ─── Positions ─────────────────────────────────────────────────
+
+model Position {
+  id              String        @id @default(cuid())
+  userId          String
+  subAccountId    String?
+  marketId        String
+  side            PositionSide
+  size            Float
+  entryPrice      Float
+  liquidationPrice Float
+  leverage        Float
+  margin          Float
+  unrealizedPnl   Float        @default(0)
+  realizedPnl     Float        @default(0)
+  marginMode      MarginMode   @default(CROSS)
+  status          PositionStatus @default(OPEN)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  closedAt        DateTime?
+
+  user            User         @relation(fields: [userId], references: [id])
+  subAccount      SubAccount?  @relation(fields: [subAccountId], references: [id])
+  market          Market       @relation(fields: [marketId], references: [id])
+
+  @@unique([userId, subAccountId, marketId])
+  @@index([userId, status])
+  @@index([marketId])
+}
+
+enum PositionSide {
+  LONG
+  SHORT
+}
+
+enum MarginMode {
+  CROSS
+  ISOLATED
+}
+
+enum PositionStatus {
+  OPEN
+  CLOSED
+  LIQUIDATED
+}
+
+// ─── Funding Rates ─────────────────────────────────────────────
+
+model FundingRate {
+  id        String   @id @default(cuid())
+  marketId  String
+  rate      Float
+  markPrice Float
+  indexPrice Float
+  timestamp DateTime @default(now())
+
+  market    Market   @relation(fields: [marketId], references: [id])
+
+  @@index([marketId, timestamp])
+}
+
+// ─── Candles (OHLCV) ───────────────────────────────────────────
+
+model Candle {
+  id        String   @id @default(cuid())
+  marketId  String
+  interval  String   // "1m", "5m", "15m", "1h", "4h", "1d"
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    Float
+  timestamp DateTime
+
+  market    Market   @relation(fields: [marketId], references: [id])
+
+  @@unique([marketId, interval, timestamp])
+  @@index([marketId, interval, timestamp])
+}
+
+// ─── Deposits & Withdrawals ────────────────────────────────────
+
+model Deposit {
+  id        String          @id @default(cuid())
+  userId    String
+  amount    Float
+  asset     String          @default("USDC")
+  chain     String
+  txHash    String          @unique
+  status    TransactionStatus @default(PENDING)
+  createdAt DateTime        @default(now())
+  confirmedAt DateTime?
+
+  user      User            @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([txHash])
+}
+
+model Withdrawal {
+  id          String          @id @default(cuid())
+  userId      String
+  amount      Float
+  asset       String          @default("USDC")
+  chain       String
+  destination String
+  txHash      String?
+  status      TransactionStatus @default(PENDING)
+  createdAt   DateTime        @default(now())
+  processedAt DateTime?
+
+  user        User            @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+enum TransactionStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REJECTED
+}
+
+// ─── Points & Leaderboard ──────────────────────────────────────
+
+model PointsSeason {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  startDate          DateTime
+  endDate            DateTime
+  totalPoints        Int
+  weeklyDistribution Int      @default(250000)
+  isActive           Boolean  @default(false)
+
+  userPoints         UserPoints[]
+}
+
+model UserPoints {
+  id             String   @id @default(cuid())
+  userId         String
+  seasonId       Int
+  totalPoints    Int      @default(0)
+  weeklyPoints   Int      @default(0)
+  tradingPoints  Int      @default(0)
+  referralPoints Int      @default(0)
+  rank           Int      @default(0)
+  weekNumber     Int
+  updatedAt      DateTime @updatedAt
+
+  user           User         @relation(fields: [userId], references: [id])
+  season         PointsSeason @relation(fields: [seasonId], references: [id])
+
+  @@unique([userId, seasonId, weekNumber])
+  @@index([seasonId, totalPoints(sort: Desc)])
+}
+
+model Referral {
+  id          String   @id @default(cuid())
+  referrerId  String
+  referredId  String
+  pointsEarned Int     @default(0)
+  createdAt   DateTime @default(now())
+
+  referrer    User     @relation("Referrer", fields: [referrerId], references: [id])
+  referred    User     @relation("Referred", fields: [referredId], references: [id])
+
+  @@unique([referrerId, referredId])
+}
+
+// ─── Public Pools ──────────────────────────────────────────────
+
+model Pool {
+  id                   String     @id @default(cuid())
+  name                 String
+  description          String
+  operatorId           String
+  operatorFee          Float      @default(0.1) // 10%
+  totalShares          Float      @default(0)
+  totalValue           Float      @default(0)
+  status               PoolStatus @default(ACTIVE)
+  riskLevel            String     @default("medium")
+  minOperatorShareRate Float      @default(0.01)
+  createdAt            DateTime   @default(now())
+
+  shares               PoolShare[]
+}
+
+enum PoolStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+model PoolShare {
+  id         String   @id @default(cuid())
+  poolId     String
+  userId     String
+  shares     Float
+  entryValue Float
+  createdAt  DateTime @default(now())
+
+  pool       Pool     @relation(fields: [poolId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([poolId, userId])
+}
