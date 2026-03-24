@@ -54,9 +54,13 @@ export function LandingPage() {
     return () => window.removeEventListener("scroll", handle);
   }, []);
 
+  const handleLaunch = () => {
+    setCurrentPage("portfolio");
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary text-txt-primary overflow-auto">
-      {/* ── Nav ── */}
+      {/* Nav */}
       <nav className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         scrollY > 50 ? "bg-bg-secondary/90 backdrop-blur-lg border-b border-border-subtle" : "bg-transparent"
@@ -75,20 +79,18 @@ export function LandingPage() {
             <a href="#markets" className="hover:text-txt-primary transition-colors">Markets</a>
             <a href="https://docs.pulse.trade" className="hover:text-txt-primary transition-colors" target="_blank" rel="noopener">Docs</a>
           </div>
-          <button onClick={() => setCurrentPage("trade")}
+          <button onClick={handleLaunch}
             className="px-5 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-brand to-emerald-400 text-bg-primary hover:shadow-lg hover:shadow-brand/20 transition-all">
             Launch App
           </button>
         </div>
       </nav>
 
-      {/* ── Hero ── */}
+      {/* Hero */}
       <section className="relative min-h-screen flex items-center justify-center px-6 overflow-hidden">
-        {/* Background effects */}
         <div className="absolute inset-0">
           <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-brand/5 rounded-full blur-[150px]" />
           <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[120px]" />
-          {/* Grid pattern */}
           <div className="absolute inset-0 opacity-[0.03]"
             style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
         </div>
@@ -113,7 +115,7 @@ export function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button onClick={() => setCurrentPage("trade")}
+            <button onClick={handleLaunch}
               className="px-8 py-4 rounded-xl text-base font-bold bg-gradient-to-r from-brand to-emerald-400 text-bg-primary hover:shadow-xl hover:shadow-brand/25 transition-all hover:-translate-y-0.5 w-full sm:w-auto">
               Start Trading — It's Free
             </button>
@@ -123,7 +125,6 @@ export function LandingPage() {
             </a>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-3xl mx-auto">
             {STATS.map((s) => (
               <div key={s.label} className="text-center">
@@ -134,7 +135,6 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-txt-tertiary">
             <path d="M6 9l6 6 6-6" />
@@ -142,7 +142,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── Features ── */}
+      {/* Features */}
       <section id="features" className="py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -169,7 +169,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── Markets Preview ── */}
+      {/* Markets */}
       <section id="markets" className="py-24 px-6 bg-bg-secondary/50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -184,7 +184,7 @@ export function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {["BTC", "ETH", "SOL", "ARB", "DOGE", "EUR/USD"].map((m) => (
               <div key={m} className="bg-bg-primary rounded-xl p-4 border border-border-subtle text-center hover:border-brand/20 transition-all cursor-pointer"
-                onClick={() => setCurrentPage("trade")}>
+                onClick={handleLaunch}>
                 <div className="text-lg font-bold font-display text-txt-primary mb-1">{m}</div>
                 <div className="text-xs text-txt-tertiary">Up to 50x</div>
               </div>
@@ -193,7 +193,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* CTA */}
       <section className="py-24 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold font-display mb-4">
@@ -202,14 +202,14 @@ export function LandingPage() {
           <p className="text-txt-secondary mb-8 max-w-lg mx-auto">
             Connect your wallet, deposit USDC, and start trading in under a minute. Zero fees for all standard accounts.
           </p>
-          <button onClick={() => setCurrentPage("trade")}
+          <button onClick={handleLaunch}
             className="px-10 py-4 rounded-xl text-base font-bold bg-gradient-to-r from-brand to-emerald-400 text-bg-primary hover:shadow-xl hover:shadow-brand/25 transition-all hover:-translate-y-0.5">
             Launch App
           </button>
         </div>
       </section>
 
-      {/* ── Footer ── */}
+      {/* Footer */}
       <footer className="border-t border-border-subtle py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">

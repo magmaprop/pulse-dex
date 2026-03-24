@@ -6,7 +6,6 @@ import { TopNav } from "@/components/layout/TopNav";
 import { PortfolioPage } from "@/components/portfolio/PortfolioPage";
 import { EarnPage } from "@/components/earn/EarnPage";
 import { LeaderboardPage } from "@/components/leaderboard/LeaderboardPage";
-import { LandingPage } from "@/components/landing/LandingPage";
 import { DepositModal } from "@/components/portfolio/DepositModal";
 import { WithdrawModal } from "@/components/portfolio/WithdrawModal";
 import { TradingChart } from "@/components/trade/TradingChart";
@@ -25,7 +24,6 @@ export default function Home() {
   const { isConnected } = useAccount();
   const { markets, selectedMarket, setSelectedMarket, updateMarketPrices } = useMarketStore();
   const { setConnected } = useAccountStore();
-  const [showLanding, setShowLanding] = useState(true);
   const { prices, connected: priceConnected, error: priceError } = usePythPrices(ALL_SYMBOLS);
   const { status: wsStatus, latency } = useWebSocket();
   useMarketSubscription(selectedMarket?.id);
@@ -33,9 +31,6 @@ export default function Home() {
   useEffect(() => { if (Object.keys(prices).length > 0) updateMarketPrices(prices); }, [prices, updateMarketPrices]);
   useEffect(() => { if (!selectedMarket && markets.length > 0) setSelectedMarket(markets[0]); }, [selectedMarket, markets, setSelectedMarket]);
   useEffect(() => { setConnected(isConnected); }, [isConnected, setConnected]);
-  useEffect(() => { if (currentPage !== "trade") setShowLanding(false); }, [currentPage]);
-
-  if (showLanding && currentPage === "trade" && !isConnected) return <LandingPage />;
 
   return (
     <div className="w-screen h-screen flex flex-col overflow-hidden bg-bg-primary">
