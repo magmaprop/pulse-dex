@@ -181,4 +181,56 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {["BTC", "ETH", "SOL", "ARB", "DOGE", "EUR/USD"].map((m) => (
+              <div key={m} className="bg-bg-primary rounded-xl p-4 border border-border-subtle text-center hover:border-brand/20 transition-all cursor-pointer"
+                onClick={handleLaunch}>
+                <div className="text-lg font-bold font-display text-txt-primary mb-1">{m}</div>
+                <div className="text-xs text-txt-tertiary">Up to 50x</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-24 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold font-display mb-4">
+            Ready to Trade?
+          </h2>
+          <p className="text-txt-secondary mb-8 max-w-lg mx-auto">
+            Connect your wallet, deposit USDC, and start trading in under a minute. Zero fees for all standard accounts.
+          </p>
+          <button onClick={handleLaunch}
+            className="px-10 py-4 rounded-xl text-base font-bold bg-gradient-to-r from-brand to-emerald-400 text-bg-primary hover:shadow-xl hover:shadow-brand/25 transition-all hover:-translate-y-0.5">
+            Launch App
+          </button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border-subtle py-12 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-brand to-emerald-400 flex items-center justify-center">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#08090c">
+                <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" />
+              </svg>
+            </div>
+            <span className="text-sm font-semibold font-display">Pulse</span>
+          </div>
+          <div className="flex items-center gap-6 text-xs text-txt-tertiary">
+            <a href="https://docs.pulse.trade" className="hover:text-txt-secondary transition-colors">Docs</a>
+            <a href="https://twitter.com/PulseDEX" className="hover:text-txt-secondary transition-colors">Twitter</a>
+            <a href="https://discord.gg/pulse" className="hover:text-txt-secondary transition-colors">Discord</a>
+            <a href="https://github.com/pulse-dex" className="hover:text-txt-secondary transition-colors">GitHub</a>
+          </div>
+          <div className="text-xs text-txt-disabled">
+            © 2026 Pulse. All rights reserved.
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
